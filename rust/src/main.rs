@@ -1,20 +1,40 @@
 use std::io;
 use std::collections::HashMap;
+use chrono::{Local};
+use serde::{Serialize, Deserialize};
+use confy;
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+struct EngramConfig {
+    username: String,
+    password: String,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut username = String::new();
+    let mut cfg: EngramConfig = confy::load("engram")?;
     let stdin = io::stdin();
-    println!("Username?");
-    stdin.read_line(&mut username)?;
 
-    let mut password = String::new();
-    println!("Password?");
-    stdin.read_line(&mut password)?;
+    if cfg.username == "" {
+      println!("Username?");
+      let mut username = String::new();
+      stdin.read_line(&mut username)?;
+
+      cfg.username = username.trim().to_string();
+      confy::store("engram", &cfg);
+    }
+    if cfg.password == "" {
+      println!("Password?");
+      let mut password = String::new();
+      stdin.read_line(&mut password)?;
+
+      cfg.password = password.trim().to_string();
+      confy::store("engram", &cfg);
+    }
     
     let mut login_post_map = HashMap::new();
-    login_post_map.insert("username", username.trim());
-    login_post_map.insert("password", password.trim());
+    login_post_map.insert("username", cfg.username);
+    login_post_map.insert("password", cfg.password);
 
     let client = reqwest::Client::builder()
         .cookie_store(true).build().unwrap();
@@ -35,8 +55,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         running = false;
       } else {
         let mut note_post_map = HashMap::new();
-        note_post_map.insert("date", "2021-11-04");
-        note_post_map.insert("body", &buffer);
+        let date_string = Local::today().format("%Y-%m-%d").to_string();
+
+        note_post_map.insert("date", date_string);
+        note_post_map.insert("body", buffer);
 
         let create_note_res = client.post("https://engram.xyzdigital.com/api/notes")
             .json(&note_post_map)
