@@ -14,7 +14,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut running = true;
     while running == true {
-    let mut buffer = String::new();
+      let mut buffer = String::new();
       io::stdin().read_line(&mut buffer)?;
 
       let trimmed_body = buffer.trim();
